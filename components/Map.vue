@@ -12,7 +12,7 @@ onMounted(() => {
     }
   ).addTo(map)
 
-  $L.tileLayer
+  var wmsLayer = $L.tileLayer
     .wms('https://gs.earthmaps.io/geoserver/wms', {
       transparent: true,
       format: 'image/png',
@@ -21,7 +21,43 @@ onMounted(() => {
     })
     .addTo(map)
 
-  // Print the current Leaflet zoom level out to the console
+  map.on('zoomend', function () {
+    if (map.getZoom() > 8) {
+      var bounds = map.getBounds()
+      var minLon = bounds.getWest()
+      var maxLon = bounds.getEast()
+      var minLat = bounds.getSouth()
+      var maxLat = bounds.getNorth()
+      getGeoJSON(minLon, maxLon, maxLat, minLat)
+    } else {
+      map.addLayer(wmsLayer)
+    }
+  })
+
+  const getGeoJSON = async (
+    minLon: number,
+    maxLon: number,
+    maxLat: number,
+    minLat: number
+  ) => {
+    fetch(
+      'https://gs.earthmaps.io/geoserver/hydrology/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=hydrology%3Aseg&outputFormat=application%2Fjson&srsName=EPSG:4326&cql_filter=INTERSECTS(the_geom,ENVELOPE(' +
+        minLon +
+        ',' +
+        maxLon +
+        ',' +
+        maxLat +
+        ',' +
+        minLat +
+        '))'
+    )
+      .then(response => response.json())
+      .then(data => {
+        $L.geoJSON(data).addTo(map)
+        map.removeLayer(wmsLayer)
+      })
+  }
+
   map.on('zoomend', function () {
     console.log('Current Zoom: ' + map.getZoom())
   })
