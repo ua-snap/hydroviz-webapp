@@ -3,6 +3,7 @@ const { $L } = useNuxtApp()
 
 onMounted(() => {
   var map = $L.map('map').setView([37.8, -96], 4)
+  var geoJsonlayer: any
 
   $L.tileLayer(
     'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
@@ -23,18 +24,26 @@ onMounted(() => {
 
   map.on('zoomend', function () {
     if (map.getZoom() > 8) {
-      var bounds = map.getBounds()
-      var minLon = bounds.getWest()
-      var maxLon = bounds.getEast()
-      var minLat = bounds.getSouth()
-      var maxLat = bounds.getNorth()
-      getGeoJSON(minLon, maxLon, maxLat, minLat)
+      if (!geoJsonlayer) {
+        var bounds = map.getBounds()
+        var minLon = bounds.getWest()
+        var maxLon = bounds.getEast()
+        var minLat = bounds.getSouth()
+        var maxLat = bounds.getNorth()
+        addGeoJson(minLon, maxLon, maxLat, minLat)
+      }
     } else {
-      map.addLayer(wmsLayer)
+      if (!map.hasLayer(wmsLayer)) {
+        map.addLayer(wmsLayer)
+      }
+      if (geoJsonlayer && map.hasLayer(geoJsonlayer)) {
+        map.removeLayer(geoJsonlayer)
+        geoJsonlayer = null
+      }
     }
   })
 
-  const getGeoJSON = async (
+  const addGeoJson = async (
     minLon: number,
     maxLon: number,
     maxLat: number,
@@ -53,7 +62,8 @@ onMounted(() => {
     )
       .then(response => response.json())
       .then(data => {
-        $L.geoJSON(data)
+        geoJsonlayer = $L
+          .geoJSON(data)
           .addTo(map)
           .on('click', function (e) {
             console.log(e.sourceTarget.feature.properties.seg_id_nat)
