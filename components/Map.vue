@@ -53,7 +53,11 @@ onMounted(() => {
     )
       .then(response => response.json())
       .then(data => {
-        $L.geoJSON(data).addTo(map)
+        $L.geoJSON(data)
+          .addTo(map)
+          .on('click', function (e) {
+            console.log(e.sourceTarget.feature.properties.seg_id_nat)
+          })
         map.removeLayer(wmsLayer)
       })
   }
