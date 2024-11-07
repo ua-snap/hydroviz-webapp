@@ -4,6 +4,7 @@ const lcInput = defineModel('lc', { default: 'dynamic' })
 const modelInput = defineModel('model', { default: 'ACCESS1-0' })
 const scenarioInput = defineModel('scenario', { default: 'rcp85' })
 var statsData = ref(null)
+var selectedSeg = ref(null)
 
 const lcs: Record<string, string> = {
   dynamic: 'Dynamic',
@@ -131,9 +132,19 @@ onMounted(() => {
           .geoJSON(data)
           .addTo(map)
           .on('click', function (e) {
-            console.log(e.sourceTarget.feature.properties.seg_id_nat)
-            let seg_id = e.sourceTarget.feature.properties.seg_id_nat
+            if (selectedSeg.value) {
+              statsData.value = null
+              selectedSeg.value.setStyle({
+                color: 'rgb(51, 136, 255)',
+              })
+            }
+            selectedSeg.value = e.sourceTarget
+            console.log(selectedSeg.value?.feature.properties.seg_id_nat)
+            let seg_id = selectedSeg.value?.feature.properties.seg_id_nat
             let url = 'http://localhost:5000/conus_hydrology/' + seg_id
+            selectedSeg.value?.setStyle({
+              color: 'red',
+            })
             fetch(url)
               .then(response => response.json())
               .then(data => {
@@ -154,6 +165,9 @@ onMounted(() => {
 <template>
   <div>
     <div id="map" style="height: 500px"></div>
+  </div>
+  <div v-if="selectedSeg && !statsData" class="p-6">
+    <progress class="progress" />
   </div>
   <div v-if="statsData">
     <div
