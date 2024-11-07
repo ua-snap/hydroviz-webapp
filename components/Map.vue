@@ -1,9 +1,74 @@
 <script setup lang="ts">
 const { $L } = useNuxtApp()
+const lcInput = defineModel('lc', { default: 'dynamic' })
+const modelInput = defineModel('model', { default: 'ACCESS1-0' })
+const scenarioInput = defineModel('scenario', { default: 'rcp85' })
+var statsData = ref(null)
+
+const lcs: Record<string, string> = {
+  dynamic: 'Dynamic',
+  static: 'Static',
+}
+
+const models: Record<string, string> = {
+  'ACCESS1-0': 'ACCESS1-0',
+  'bcc-csm1-1': 'BCC-CSM1-1',
+  'BNU-ESM': 'BNU-ESM',
+  CCSM4: 'CCSM4',
+  'GFDL-ESM2G': 'GFDL-ESM2G',
+  'GFDL-ESM2M': 'GFDL-ESM2M',
+  'IPSL-CM5A-LR': 'IPSL-CM5A-LR',
+  'IPSL-CM5A-MR': 'IPSL-CM5A-MR',
+  MIROC5: 'MIROC5',
+  'MIROC-ESM': 'MIROC-ESM',
+  'MIROC-ESM-CHEM': 'MIROC-ESM-CHEM',
+  'MRI-CGCM3': 'MRI-CGCM3',
+  'NorESM1-M': 'NorESM1-M',
+}
+
+const scenarios: Record<string, string> = {
+  rcp26: 'RCP 2.6',
+  rcp45: 'RCP 4.5',
+  rcp60: 'RCP 6.0',
+  rcp85: 'RCP 8.5',
+}
+
+const eras: Record<string, string> = {
+  // '1976_2005': '1976-2005',
+  '2016_2045': '2016-2045',
+  '2046_2075': '2046-2075',
+  '2071_2100': '2071-2100',
+}
+
+const stats: string[] = [
+  'dh3',
+  'dh15',
+  'dl3',
+  'dl16',
+  'fh1',
+  'fl1',
+  'fl3',
+  'ma12',
+  'ma13',
+  'ma14',
+  'ma15',
+  'ma16',
+  'ma17',
+  'ma18',
+  'ma19',
+  'ma20',
+  'ma21',
+  'ma22',
+  'ma23',
+  'ra1',
+  'ra3',
+  'th1',
+  'tl1',
+]
 
 onMounted(() => {
   var map = $L.map('map').setView([37.8, -96], 4)
-  var geoJsonlayer: any
+  var geoJsonlayer: any = null
 
   $L.tileLayer(
     'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
@@ -67,6 +132,14 @@ onMounted(() => {
           .addTo(map)
           .on('click', function (e) {
             console.log(e.sourceTarget.feature.properties.seg_id_nat)
+            let seg_id = e.sourceTarget.feature.properties.seg_id_nat
+            let url = 'http://localhost:5000/conus_hydrology/' + seg_id
+            fetch(url)
+              .then(response => response.json())
+              .then(data => {
+                statsData.value = data[seg_id]['stats']
+                console.log(statsData.value)
+              })
           })
         map.removeLayer(wmsLayer)
       })
@@ -82,6 +155,78 @@ onMounted(() => {
   <div>
     <div id="map" style="height: 500px"></div>
   </div>
+  <div v-if="statsData">
+    <div
+      class="container is-flex is-justify-content-center is-align-items-center mt-6"
+    >
+      <div class="parameter">
+        <label for="scenario" class="label">LC:</label>
+        <div class="select mb-5 mr-3">
+          <select id="scenario" v-model="lcInput">
+            <option v-for="lc in Object.keys(lcs)" :value="lc">
+              {{ lcs[lc] }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="parameter">
+        <label for="scenario" class="label">Model:</label>
+        <div class="select mb-5 mr-3">
+          <select id="scenario" v-model="modelInput">
+            <option v-for="model in Object.keys(models)" :value="model">
+              {{ models[model] }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="parameter">
+        <label for="scenario" class="label">Scenario:</label>
+        <div class="select mb-5 mr-3">
+          <select id="scenario" v-model="scenarioInput">
+            <option
+              v-for="scenario in Object.keys(scenarios)"
+              :value="scenario"
+            >
+              {{ scenarios[scenario] }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div
+      class="container is-flex is-justify-content-center is-align-items-center"
+    >
+      <table class="table mb-6">
+        <thead>
+          <tr>
+            <th class="p-5">Statistic</th>
+            <th class="p-5">1976-2005</th>
+            <th v-for="era in Object.keys(eras)" class="p-5">
+              {{ eras[era] }}
+            </th>
+          </tr>
+        </thead>
+        <tr v-for="stat in stats">
+          <th class="p-5">{{ stat }}</th>
+          <td class="p-5">
+            {{
+              statsData[lcInput][modelInput]['historical']['1976_2005'][stat]
+            }}
+          </td>
+          <td v-for="era in Object.keys(eras)" class="p-5">
+            {{ statsData[lcInput][modelInput][scenarioInput][era][stat] }}
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </template>
 
-<style scoped></style>
+<style lang="scss" scoped>
+.parameter {
+  display: inline-block;
+  select {
+    background-color: #ffffff;
+  }
+}
+</style>
