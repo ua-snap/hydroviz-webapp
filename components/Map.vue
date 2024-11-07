@@ -3,8 +3,10 @@ const { $L } = useNuxtApp()
 const lcInput = defineModel('lc', { default: 'dynamic' })
 const modelInput = defineModel('model', { default: 'ACCESS1-0' })
 const scenarioInput = defineModel('scenario', { default: 'rcp85' })
-var statsData = ref(null)
-var selectedSeg = ref(null)
+let statsData = ref(null)
+let selectedSeg = ref(null)
+let zoomAddGeoJson = false
+let moveAddGeoJson = false
 
 const lcs: Record<string, string> = {
   dynamic: 'Dynamic',
@@ -89,6 +91,11 @@ onMounted(() => {
     .addTo(map)
 
   map.on('zoomend', function () {
+    if (moveAddGeoJson) {
+      return
+    } else {
+      zoomAddGeoJson = true
+    }
     if (map.getZoom() > 8) {
       if (!geoJsonlayer) {
         var bounds = map.getBounds()
@@ -109,12 +116,41 @@ onMounted(() => {
     }
   })
 
+  map.on('moveend', function () {
+    if (zoomAddGeoJson) {
+      return
+    } else {
+      moveAddGeoJson = true
+    }
+    if (geoJsonlayer) {
+      map.removeLayer(geoJsonlayer)
+      geoJsonlayer = null
+    }
+    if (map.getZoom() > 8) {
+      var bounds = map.getBounds()
+      var minLon = bounds.getWest()
+      var maxLon = bounds.getEast()
+      var minLat = bounds.getSouth()
+      var maxLat = bounds.getNorth()
+      addGeoJson(minLon, maxLon, maxLat, minLat)
+    } else {
+      if (!map.hasLayer(wmsLayer)) {
+        map.addLayer(wmsLayer)
+      }
+      if (geoJsonlayer && map.hasLayer(geoJsonlayer)) {
+        map.removeLayer(geoJsonlayer)
+        geoJsonlayer = null
+      }
+    }
+  })
+
   const addGeoJson = async (
     minLon: number,
     maxLon: number,
     maxLat: number,
     minLat: number
   ) => {
+    if (geoJsonlayer) return
     fetch(
       'https://gs.earthmaps.io/geoserver/hydrology/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=hydrology%3Aseg&outputFormat=application%2Fjson&srsName=EPSG:4326&cql_filter=INTERSECTS(the_geom,ENVELOPE(' +
         minLon +
@@ -149,9 +185,10 @@ onMounted(() => {
               .then(response => response.json())
               .then(data => {
                 statsData.value = data[seg_id]['stats']
-                console.log(statsData.value)
               })
           })
+        zoomAddGeoJson = false
+        moveAddGeoJson = false
         map.removeLayer(wmsLayer)
       })
   }
