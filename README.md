@@ -1,75 +1,23 @@
-# Nuxt Minimal Starter
-
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+# hydroviz-webapp
 
 ## Setup
 
-Make sure to install dependencies:
-
-```bash
-# npm
+```
+nvm use lts/hydrogen
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+## Run
 
-Start the development server on `http://localhost:3000`:
+```
+cd data-api
+git checkout hydroviz_v2
+export FLASK_APP=application.py
+export API_RAS_BASE_URL=https://zeus.snap.uaf.edu/rasdaman/
+pipenv run flask run
+```
 
-```bash
-# npm
+```
+cd hydroviz-webapp
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
