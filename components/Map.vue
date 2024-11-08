@@ -3,6 +3,8 @@ const { $L } = useNuxtApp()
 const lcInput = defineModel('lc', { default: 'dynamic' })
 const modelInput = defineModel('model', { default: 'ACCESS1-0' })
 const scenarioInput = defineModel('scenario', { default: 'rcp85' })
+
+let segName = ref('')
 let statsData = ref(null)
 let selectedSeg = ref(null)
 let zoomAddGeoJson = false
@@ -175,6 +177,7 @@ onMounted(() => {
               })
             }
             selectedSeg.value = e.sourceTarget
+            segName.value = selectedSeg.value?.feature.properties.GNIS_NAME
             console.log(selectedSeg.value?.feature.properties.seg_id_nat)
             let seg_id = selectedSeg.value?.feature.properties.seg_id_nat
             let url = 'http://localhost:5000/conus_hydrology/' + seg_id
@@ -207,11 +210,15 @@ onMounted(() => {
     <progress class="progress" />
   </div>
   <div v-if="statsData">
+    <h3
+      class="title is-3 is-flex is-justify-content-center is-align-items-center mt-6 mb-5"
+    >
+      Statistics for {{ segName }}
+    </h3>
     <div
-      class="container is-flex is-justify-content-center is-align-items-center mt-6"
+      class="container is-flex is-justify-content-center is-align-items-center"
     >
       <div class="parameter">
-        <label for="scenario" class="label">LC:</label>
         <div class="select mb-5 mr-3">
           <select id="scenario" v-model="lcInput">
             <option v-for="lc in Object.keys(lcs)" :value="lc">
@@ -221,7 +228,6 @@ onMounted(() => {
         </div>
       </div>
       <div class="parameter">
-        <label for="scenario" class="label">Model:</label>
         <div class="select mb-5 mr-3">
           <select id="scenario" v-model="modelInput">
             <option v-for="model in Object.keys(models)" :value="model">
@@ -231,7 +237,6 @@ onMounted(() => {
         </div>
       </div>
       <div class="parameter">
-        <label for="scenario" class="label">Scenario:</label>
         <div class="select mb-5 mr-3">
           <select id="scenario" v-model="scenarioInput">
             <option
